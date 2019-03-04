@@ -5,11 +5,12 @@ class Board:
 
     def __init__(self):
         self.field = []
-        self.init_empty_field()
+        self._init_empty_field()
         self.coord_white, self.coord_black = [], []
         self.pieces_white, self.pieces_black = [], []
+        self.all_allowed_moves_white, self.all_allowed_moves_black = [], []
 
-    def init_empty_field(self):
+    def _init_empty_field(self):
         self.field = []
         for y in range(8):
             row = []
@@ -36,6 +37,14 @@ class Board:
         x, y = spawn_position_queen(team)
         self.field[y][x] = Queen(x, y, team)
 
+    def _update_all_allowed_moves(self):
+        for enemy in self.pieces_white:
+            positions = enemy.possible_moves(black=self.coord_black, white=self.coord_white)
+            self.all_allowed_moves_white += positions.keys()
+        for enemy in self.pieces_black:
+            positions = enemy.possible_moves(black=self.coord_black, white=self.coord_white)
+            self.all_allowed_moves_black += positions.keys()
+
     def _update_coords(self):
         self.coord_black, self.coord_white = [], []
         self.pieces_white, self.pieces_black = [], []
@@ -57,13 +66,14 @@ class Board:
             enemies = self.pieces_white
             ally = self.pieces_black
         for enemy in enemies:
-            if type(enemy) == 'King':
-                if enemy.matt(ally) is None:
+            if type(enemy) == King:
+                if enemy.matt(ally, self.coord_white, self.coord_black) is None:
                     print(f'Winner {current_team}')
                     exit()
 
     def update(self):
         self._update_coords()
+        self._update_all_allowed_moves()
 
     def select(self, x, y):
         chess_piece = self.field[y][x]
@@ -71,10 +81,16 @@ class Board:
             return chess_piece
         return None
 
+    def _move(self, piece, x, y):
+        target = self.field[y][x]
+        self.field[y][x] = piece
+        return {piece.name: (piece.x, piece.y), target.name: (x, y)}
+
     def allowed_moves(self, piece):
         if piece.team == 'Empty':
+            print('Empty field can not move')
             return
-        if type(piece) == 'King':
+        if type(piece) == King:
             if piece.team == 'white':
                 all_enemies = self.pieces_black
             else:
@@ -163,11 +179,12 @@ class Board:
 
 class Piece:
 
-    def __init__(self, x, y, team):
+    def __init__(self, x, y, team, name):
         self.x = x
         self.y = y
         self.team = team
         self.is_first_move = True
+        self.name = team + name
         self.enemy = self._get_enemy()
 
     def _get_enemy(self):
@@ -181,7 +198,7 @@ class Piece:
 class Empty(Piece):
 
     def __init__(self, x, y, team='Empty'):
-        Piece.__init__(self, x, y, team)
+        Piece.__init__(self, x, y, team, '-empty')
 
     def __repr__(self):
         return f"Empty at X: {self.x} Y: {self.y}"
@@ -190,7 +207,7 @@ class Empty(Piece):
 class Pawn(Piece):
 
     def __init__(self, x, y, team):
-        Piece.__init__(self, x, y, team)
+        Piece.__init__(self, x, y, team, 'pawn')
 
     def __repr__(self):
         return f"{self.team} Pawn on X: {self.x} Y: {self.y}"
@@ -215,7 +232,7 @@ class Pawn(Piece):
 class King(Piece):
 
     def __init__(self, x, y, team):
-        Piece.__init__(self, x, y, team)
+        Piece.__init__(self, x, y, team, '-king')
 
     def __repr__(self):
         return f"{self.team} King at X: {self.x} Y: {self.y}"
@@ -257,7 +274,7 @@ class King(Piece):
 class Queen(Piece):
 
     def __init__(self, x, y, team):
-        Piece.__init__(self, x, y, team)
+        Piece.__init__(self, x, y, team, '-queen')
 
     def __repr__(self):
         return f"{self.team} Queen at X: {self.x} Y: {self.y}"
@@ -346,7 +363,7 @@ class Queen(Piece):
 class Rock(Piece):
 
     def __init__(self, x, y, team):
-        Piece.__init__(self, x, y, team)
+        Piece.__init__(self, x, y, team, '-rock')
 
     def __repr__(self):
         return f"{self.team} Rock at X: {self.x} Y: {self.y}"
@@ -395,7 +412,7 @@ class Rock(Piece):
 class Knight(Piece):
 
     def __init__(self, x, y, team):
-        Piece.__init__(self, x, y, team)
+        Piece.__init__(self, x, y, team, '-knight')
 
     def __repr__(self):
         return f"{self.team} Knight at X: {self.x} Y: {self.y}"
@@ -415,7 +432,7 @@ class Knight(Piece):
 class Bishop(Piece):
 
     def __init__(self, x, y, team):
-        Piece.__init__(self, x, y, team)
+        Piece.__init__(self, x, y, team, '-bishop')
 
     def __repr__(self):
         return f"{self.team} Bishop at X: {self.x} Y: {self.y}"
