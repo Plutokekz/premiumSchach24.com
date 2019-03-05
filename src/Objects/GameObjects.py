@@ -39,10 +39,12 @@ class Board:
 
     def _update_all_allowed_moves(self):
         for enemy in self.pieces_white:
-            positions = enemy.possible_moves(black=self.coord_black, white=self.coord_white)
+            positions = enemy.possible_moves(black=self.coord_black, white=self.coord_white,
+                                             enemies=self.all_allowed_moves_black)
             self.all_allowed_moves_white += positions.keys()
         for enemy in self.pieces_black:
-            positions = enemy.possible_moves(black=self.coord_black, white=self.coord_white)
+            positions = enemy.possible_moves(black=self.coord_black, white=self.coord_white,
+                                             enemies=self.all_allowed_moves_white)
             self.all_allowed_moves_black += positions.keys()
 
     def _update_coords(self):
@@ -61,13 +63,13 @@ class Board:
     def _check_for_game_over(self, current_team):
         if current_team == 'black':
             enemies = self.pieces_white
-            ally = self.pieces_black
+            moves = self.all_allowed_moves_black
         else:
             enemies = self.pieces_white
-            ally = self.pieces_black
+            moves = self.all_allowed_moves_white
         for enemy in enemies:
             if type(enemy) == King:
-                if enemy.matt(ally, self.coord_white, self.coord_black) is None:
+                if enemy.possible_moves(enemies=moves) is None:
                     print(f'Winner {current_team}')
                     exit()
 
@@ -90,46 +92,37 @@ class Board:
         if piece.team == 'Empty':
             print('Empty field can not move')
             return
-        if type(piece) == King:
-            if piece.team == 'white':
-                all_enemies = self.pieces_black
-            else:
-                all_enemies = self.pieces_white
-            possible_moves = piece.matt(all_enemies, self.coord_white, self.coord_black)
+        if piece.team == 'white':
+            all_enemies = self.all_allowed_moves_black
         else:
-            possible_moves = piece.possible_moves(white=self.coord_white, black=self.coord_black)
+            all_enemies = self.all_allowed_moves_white
+        possible_moves = piece.possible_moves(white=self.coord_white, black=self.coord_black, enemies=all_enemies)
         real_possible_moves = possible_moves.copy()
-        for coord in possible_moves.keys():
-            if self.field[coord[1]][coord[0]].team in possible_moves[coord]:
+        for x, y in possible_moves.keys():
+            if self.field[y][x].team in possible_moves[(x, y)]:
                 pass
             else:
-                del real_possible_moves[coord]
+                del real_possible_moves[(x, y)]
         return real_possible_moves
 
     def _rochhade(self, piece, to_piece, enemies):
         if to_piece.x == 0:
-            for coord in [(1, 0), (2, 0), (3, 0)]:
-                if self.field[coord[1]][coord[0]].team != 'Empty':
-                    print('check')
-                    return None
-            if piece._check_matt((piece.y, 2), enemies, white=self.coord_white, black=self.coord_black)is None:
-                self.field[piece.y][2] = piece
-                self.field[to_piece.y][3] = to_piece
-                self.field[piece.y][piece.x] = Empty(piece.x, piece.y)
-                self.field[to_piece.y][to_piece.x] = Empty(to_piece.x, to_piece.y)
-                piece.x, to_piece.x = 2, 3
-                return True
+            x_king = 2
+            x_rock = 3
+            coords = [(1, 0), (2, 0), (3, 0)]
         elif to_piece.x == 7:
-            for coord in [(5, 0), (6, 0)]:
-                if self.field[coord[1]][coord[0]].team != 'Empty':
-                    print('check')
+            x_king = 6
+            x_rock = 5
+            coords = [(5, 0), (6, 0)]
+            for x, y in coords:
+                if self.select(x, y).team != 'Empty':
                     return None
-            if piece._check_matt((piece.y, 6), enemies, white=self.coord_white, black=self.coord_black) is None:
-                self.field[piece.y][6] = piece
-                self.field[to_piece.y][5] = to_piece
-                self.field[piece.y][piece.x] = Empty(piece.x, piece.y)
-                self.field[to_piece.y][to_piece.x] = Empty(to_piece.x, to_piece.y)
-                piece.x, to_piece.x = 6, 5
+            if piece.check_coord((piece.y, x_king), enemies)is None:
+                self._move(piece, x_king, piece.y)
+                self._move(to_piece, x_rock, to_piece.y)
+                self._move(Empty(piece.x, piece.y), piece.x, piece.y)
+                self._move(Empty(to_piece.x, to_piece.y), to_piece.x, to_piece.y)
+                piece.x, to_piece.x = x_king, x_rock
                 return True
         return None
 
@@ -138,12 +131,11 @@ class Board:
             print('can not move Empty')
             return None
         if type(piece) == King:
-            print('King ?')
             if piece.team == 'white':
-                all_enemies = self.pieces_black
+                all_enemies = self.all_allowed_moves_black
             else:
-                all_enemies = self.pieces_white
-            possible_moves = piece.matt(all_enemies, self.coord_white, self.coord_black)
+                all_enemies = self.all_allowed_moves_white
+            possible_moves = piece.possible_moves(white=self.coord_white, black=self.coord_black, enemies=all_enemies)
             if to_piece.team == piece.team and type(to_piece) == Rock and to_piece.is_first_move:
                 if self._rochhade(piece, to_piece, all_enemies):
                     piece.is_first_move = False
@@ -238,35 +230,31 @@ class King(Piece):
         return f"{self.team} King at X: {self.x} Y: {self.y}"
 
     def possible_moves(self, **kwargs):
+        enemies = kwargs['enemies']
         moves = {}
         if self.is_first_move:
-            moves[(0, self.y)] = [self.team]
-            moves[(7, self.y)] = [self.team]
+            moves[(2, self.y)] = [self.team]
+            moves[(6, self.y)] = [self.team]
         for coord, _type in {(self.x - 1, self.y - 1): ['Enemy', 'Empty'], (self.x, self.y - 1): ['Enemy', 'Empty'],
                              (self.x - 1, self.y - 1): ['Enemy', 'Empty'], (self.x - 1, self.y): ['Enemy', 'Empty'],
                              (self.x + 1, self.y): ['Enemy', 'Empty'], (self.x - 1, self.y + 1): ['Enemy', 'Empty'],
-                             (self.x, self.y + 1): ['Enemy', 'Empty'], (self.x + 1, self.y + 1): ['Enemy', 'Empty']}.items():
+                             (self.x, self.y + 1): ['Enemy', 'Empty'], (self.x + 1, self.y + 1): ['Enemy', 'Empty'],
+                             }.items():
             if 0 <= coord[0] <= 7 and 0 <= coord[1] <= 7:
                 moves[coord] = _type
-        return moves
+        return self.matt(enemies, moves)
 
-    def matt(self, enemies, white, black):
-        allowed_moves2 = self.possible_moves()
-        allowed_moves = self.possible_moves()
-        for coord in allowed_moves2.items():
-            if self._check_matt(coord, enemies, black, white):
-                del allowed_moves[coord]
-        if allowed_moves:
-            return allowed_moves
+    def matt(self, all_allowed_enemie_moves, moves):
+        for coord in moves.items():
+            if self.check_coord(coord, all_allowed_enemie_moves):
+                del moves[coord]
+        if moves:
+            return moves
         return None
 
     @staticmethod
-    def _check_matt(coord, enemies, black, white):
-        all_possible_enemy_moves = []
-        for enemy in enemies:
-            positions = enemy.possible_moves(black=black, white=white)
-            all_possible_enemy_moves += positions.keys()
-        if coord in all_possible_enemy_moves:
+    def check_coord(coord, enemies):
+        if coord in enemies:
             return True
         return None
 
