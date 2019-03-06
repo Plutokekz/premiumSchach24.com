@@ -1,20 +1,52 @@
-from src.Objects.GameObjects import Board
-board = Board()
-board.setup()
+import pygame
+from src.GameObjects.GameObjects import Bauer
+from src.GameObjects.FieldHandler import FieldHandler
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 800
+SCREEN_TITLE = 'Chess'
+WITHE_COLOR = (255, 255, 255)
+BLACK_COLOR = (0, 0, 0)
 
-for coord, selection in [[(4, 1), (4, 3)], [(5, 1), (5, 3)], [(6, 1), (6, 3)], [(7, 1), (7, 3)], [(5, 0), (6, 1)], [(7, 3), (7, 4)], [(6, 0), (7, 2)]]:
-    pawn = board.select(coord[0], coord[1])
-    print(f'try to move {pawn}')
-    selection = board.select(selection[0], selection[1])
-    board.move(pawn, selection)
+
+class Game:
+
+    def __init__(self, back_ground_color, screen_wight, screen_height, title):
+        self.back_ground_color = back_ground_color
+        self.height = screen_height
+        self.width = screen_wight
+        self.title = title
+        self.clock = pygame.time.Clock()
+        self.TICK_RATE = 60
+        self.is_game_over = False
+
+        self.game_screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        pygame.display.set_caption(SCREEN_TITLE)
+        self.field_handler = FieldHandler()
+        self.field_handler.setup_draw(self.game_screen)
+
+    def run(self):
+        while not self.is_game_over:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.is_game_over = True
+
+                #self.player.move([], event)
+                self.field_handler.check_for_clicks(event)
+
+            pygame.display.update()
+            self.field_handler.draw(self.game_screen)
+            self.field_handler.draw_board(self.game_screen)
+            self.clock.tick(self.TICK_RATE)
 
 
-rock = board.select(4, 0)
-board.update()
-print('Knight')
-print(board.allowed_moves(rock))
-selection = board.select(7, 0)
-board.move(rock, selection)
-#print('Pawn')
-#print(pawn.possible_moves(white=board.coord_white, black=board.coord_black))
-print(board)
+
+
+
+
+pygame.init()
+
+new_game = Game(BLACK_COLOR, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+new_game.run()
+
+pygame.quit()
+quit()

@@ -86,6 +86,7 @@ class Board:
     def _move(self, piece, x, y):
         target = self.field[y][x]
         self.field[y][x] = piece
+        self.update()
         return {piece.name: (piece.x, piece.y), target.name: (x, y)}
 
     def allowed_moves(self, piece):
@@ -123,6 +124,8 @@ class Board:
                 self._move(Empty(piece.x, piece.y), piece.x, piece.y)
                 self._move(Empty(to_piece.x, to_piece.y), to_piece.x, to_piece.y)
                 piece.x, to_piece.x = x_king, x_rock
+                piece.is_first_move = False
+                to_piece.is_first_move = False
                 return True
         return None
 
@@ -138,9 +141,6 @@ class Board:
             possible_moves = piece.possible_moves(white=self.coord_white, black=self.coord_black, enemies=all_enemies)
             if to_piece.team == piece.team and type(to_piece) == Rock and to_piece.is_first_move:
                 if self._rochhade(piece, to_piece, all_enemies):
-                    piece.is_first_move = False
-                    to_piece.is_first_move = False
-                    self.update()
                     self._check_for_game_over(piece.team)
                     print('Played Rochade')
                     return True
