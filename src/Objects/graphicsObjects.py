@@ -1,4 +1,7 @@
 import pygame
+from src.helpers.SelectionQueue import SelectionQueue
+
+selection_queue = SelectionQueue()
 
 
 class GameObject(pygame.sprite.Sprite):
@@ -6,7 +9,7 @@ class GameObject(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height, team, img_path):
         pygame.sprite.Sprite.__init__(self)
         object_image = pygame.image.load(img_path)
-        self.image = pygame.transform.smoothscale(object_image, (width, height))
+        self.image = pygame.transform.scale(object_image, (width, height))
         self.rect = pygame.Rect(x, y, width, height)
         self.x_pos = x
         self.y_pos = y
@@ -36,18 +39,52 @@ class GameObject(pygame.sprite.Sprite):
     def un_highlight(self):
         self.image = self.highlight_image
 
+    def select(self, event, field):
+        if event.button == 1:
+            if self.rect.collidepoint(event.pos):
+                current_x_index, current_y_index = self.x_pos / 100, self.y_pos / 100
+                selection_queue.add(current_x_index, current_y_index, field)
+
     def get_index(self):
         return int(self.x_pos / 100), int(self.y_pos / 100)
 
 
-class Bauer(GameObject):
+class Pawn(GameObject):
 
     def __init__(self, x, y, width, height, background, team, img_path):
         super().__init__(x, y, width, height, team, img_path)
         self.draw(background)
 
 
-class Turm(GameObject):
+class Queen(GameObject):
+
+    def __init__(self, x, y, width, height, background, team, img_path):
+        super().__init__(x, y, width, height, team, img_path)
+        self.draw(background)
+
+
+class King(GameObject):
+
+    def __init__(self, x, y, width, height, background, team, img_path):
+        super().__init__(x, y, width, height, team, img_path)
+        self.draw(background)
+
+
+class Bishop(GameObject):
+
+    def __init__(self, x, y, width, height, background, team, img_path):
+        super().__init__(x, y, width, height, team, img_path)
+        self.draw(background)
+
+
+class Knight(GameObject):
+
+    def __init__(self, x, y, width, height, background, team, img_path):
+        super().__init__(x, y, width, height, team, img_path)
+        self.draw(background)
+
+
+class Rock(GameObject):
 
     def __init__(self, x, y, width, height, background, team, img_path):
         super().__init__(x, y, width, height, team, img_path)
@@ -65,3 +102,9 @@ class ChessSquare(pygame.sprite.Sprite):
         self.height = height
         self.thickness = thickness
         self.rect = pygame.Rect(x, y, width, height)
+
+    def select(self, event):
+        if event.button == 1:
+            if self.rect.collidepoint(event.pos):
+                current_x_index, current_y_index = self.x / 100, self.y / 100
+                return current_x_index, current_y_index

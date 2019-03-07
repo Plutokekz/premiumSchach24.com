@@ -1,6 +1,5 @@
 import pygame
-from src.GameObjects.GameObjects import Bauer
-from src.GameObjects.FieldHandler import FieldHandler
+from src.Handlers.FieldHandler import FieldHandler
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
 SCREEN_TITLE = 'Chess'
@@ -29,8 +28,6 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.is_game_over = True
-
-                #self.player.move([], event)
                 self.field_handler.check_for_clicks(event)
 
             pygame.display.update()

@@ -20,7 +20,7 @@ class SelectionQueue:
         print(self.selection_queue_indexes)
         if self.add_counter == 2:
             self.add_counter = 0
-            self._move_object(field)
+            #self._move_object(field)
 
     def _move_object(self, field):
         player = self.selection_queue_objects[0]

@@ -1,4 +1,4 @@
-from src.helper.HelperFunktions import *
+from src.helpers.SpawnPositions import *
 
 
 class Board:
@@ -79,6 +79,7 @@ class Board:
 
     def select(self, x, y):
         chess_piece = self.field[y][x]
+        print(f'Selection from Matrix: {chess_piece}')
         if chess_piece:
             return chess_piece
         return None
@@ -107,15 +108,17 @@ class Board:
         return real_possible_moves
 
     def _rochhade(self, piece, to_piece, enemies):
+        print(to_piece.x)
         if to_piece.x == 0:
             x_king = 2
             x_rock = 3
-            coords = [(1, 0), (2, 0), (3, 0)]
+            coords = [(1, piece.y), (2, piece.y), (3, piece.y)]
         elif to_piece.x == 7:
             x_king = 6
             x_rock = 5
-            coords = [(5, 0), (6, 0)]
+            coords = [(5, piece.y), (6, piece.y)]
             for x, y in coords:
+                print(self.select(x, y).team)
                 if self.select(x, y).team != 'Empty':
                     return None
             if piece.check_coord((piece.y, x_king), enemies)is None:
@@ -134,20 +137,22 @@ class Board:
             print('can not move Empty')
             return None
         if type(piece) == King:
+            print('King KING KING KING')
             if piece.team == 'white':
                 all_enemies = self.all_allowed_moves_black
             else:
                 all_enemies = self.all_allowed_moves_white
             possible_moves = piece.possible_moves(white=self.coord_white, black=self.coord_black, enemies=all_enemies)
+            print(to_piece.team, piece.team, type(to_piece), Rock, to_piece.is_first_move)
             if to_piece.team == piece.team and type(to_piece) == Rock and to_piece.is_first_move:
                 if self._rochhade(piece, to_piece, all_enemies):
                     self._check_for_game_over(piece.team)
                     print('Played Rochade')
-                    return True
+                    return 'Rochade'
         else:
             possible_moves = piece.possible_moves(white=self.coord_white, black=self.coord_black)
         x_to, y_to = to_piece.x, to_piece.y
-        print(piece)
+        print(f'From: {piece}, To: {to_piece}, Possible moves From: {possible_moves}')
         if (x_to, y_to) in possible_moves.keys():
             if to_piece.team in possible_moves[(x_to, y_to)]:
                 self.field[y_to][x_to] = piece
@@ -232,9 +237,9 @@ class King(Piece):
     def possible_moves(self, **kwargs):
         enemies = kwargs['enemies']
         moves = {}
-        if self.is_first_move:
-            moves[(2, self.y)] = [self.team]
-            moves[(6, self.y)] = [self.team]
+        #if self.is_first_move:
+        #    moves[(2, self.y)] = [self.team]
+        #    moves[(6, self.y)] = [self.team]
         for coord, _type in {(self.x - 1, self.y - 1): ['Enemy', 'Empty'], (self.x, self.y - 1): ['Enemy', 'Empty'],
                              (self.x - 1, self.y - 1): ['Enemy', 'Empty'], (self.x - 1, self.y): ['Enemy', 'Empty'],
                              (self.x + 1, self.y): ['Enemy', 'Empty'], (self.x - 1, self.y + 1): ['Enemy', 'Empty'],
