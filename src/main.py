@@ -1,5 +1,5 @@
 import pygame
-from src.Handlers.FieldHandler import FieldHandler
+from src.Handlers.FieldHandler import ChessBoard
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
 SCREEN_TITLE = 'Chess'
@@ -20,19 +20,18 @@ class Game:
 
         self.game_screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption(SCREEN_TITLE)
-        self.field_handler = FieldHandler()
-        self.field_handler.setup_draw(self.game_screen)
+        self.field_handler = ChessBoard()
+        self.field_handler.setup()
 
     def run(self):
         while not self.is_game_over:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.is_game_over = True
-                self.field_handler.check_for_clicks(event)
+                self.field_handler.event_handler(event)
 
             pygame.display.update()
             self.field_handler.draw(self.game_screen)
-            self.field_handler.draw_board(self.game_screen)
             self.clock.tick(self.TICK_RATE)
 
 

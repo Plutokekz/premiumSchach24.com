@@ -1,6 +1,5 @@
 from src.helpers.SpawnPositions import *
 
-
 class Board:
 
     def __init__(self):
@@ -17,25 +16,6 @@ class Board:
             for x in range(8):
                 row.append(Empty(x, y))
             self.field.append(row)
-
-    #def setup(self):
-    #    self._spawn('white')
-    #    self._spawn('black')
-    #    self._update_coords()
-
-    #def _spawn(self, team):
-    #    for x, y in spawn_position_pawn(team):
-    #        self.field[y][x] = Pawn(x, y, team)
-    #    for x, y in spawn_position_rock(team):
-    #        self.field[y][x] = Rock(x, y, team)
-    #    for x, y in spawn_position_knight(team):
-    #        self.field[y][x] = Knight(x, y, team)
-    #    for x, y in spawn_position_bishop(team):
-    #        self.field[y][x] = Bishop(x, y, team)
-    #    x, y = spawn_position_king(team)
-    #    self.field[y][x] = King(x, y, team)
-    #    x, y = spawn_position_queen(team)
-    #    self.field[y][x] = Queen(x, y, team)
 
     def _update_all_allowed_moves(self):
         for enemy in self.pieces_white:
@@ -108,7 +88,6 @@ class Board:
         return real_possible_moves
 
     def _rochhade(self, piece, to_piece, enemies):
-        print(to_piece.x)
         if to_piece.x == 0:
             x_king = 2
             x_rock = 3
@@ -120,6 +99,7 @@ class Board:
             for x, y in coords:
                 print(self.select(x, y).team)
                 if self.select(x, y).team != 'Empty':
+                    print('Meeeep')
                     return None
             if piece.check_coord((piece.y, x_king), enemies)is None:
                 self._move(piece, x_king, piece.y)
@@ -127,6 +107,8 @@ class Board:
                 self._move(Empty(piece.x, piece.y), piece.x, piece.y)
                 self._move(Empty(to_piece.x, to_piece.y), to_piece.x, to_piece.y)
                 piece.x, to_piece.x = x_king, x_rock
+                #for graphic
+                piece.x_pos, to_piece.x_pos = int(x_king * 100), int(x_rock * 100)
                 piece.is_first_move = False
                 to_piece.is_first_move = False
                 return True
@@ -136,7 +118,7 @@ class Board:
         if piece.team == 'Empty':
             print('can not move Empty')
             return None
-        if type(piece) == King:
+        if str(piece) == 'King':
             print('King KING KING KING')
             if piece.team == 'white':
                 all_enemies = self.all_allowed_moves_black
@@ -144,7 +126,7 @@ class Board:
                 all_enemies = self.all_allowed_moves_white
             possible_moves = piece.possible_moves(white=self.coord_white, black=self.coord_black, enemies=all_enemies)
             print(to_piece.team, piece.team, type(to_piece), Rock, to_piece.is_first_move)
-            if to_piece.team == piece.team and type(to_piece) == Rock and to_piece.is_first_move:
+            if to_piece.team == piece.team and str(to_piece) == 'Rock' and to_piece.is_first_move:
                 if self._rochhade(piece, to_piece, all_enemies):
                     self._check_for_game_over(piece.team)
                     print('Played Rochade')
@@ -155,9 +137,11 @@ class Board:
         print(f'From: {piece}, To: {to_piece}, Possible moves From: {possible_moves}')
         if (x_to, y_to) in possible_moves.keys():
             if to_piece.team in possible_moves[(x_to, y_to)]:
-                self.field[y_to][x_to] = piece
-                self.field[piece.y][piece.x] = Empty(piece.x, piece.y)
+                self._move(piece, x_to, y_to)
+                self._move(Empty(piece.x, piece.y), piece.x, piece.y)
                 piece.x, piece.y = x_to, y_to
+                #for graphic
+                piece.x_pos, piece.y_pos = int(x_to*100), int(y_to*100)
                 piece.is_first_move = False
                 self.update()
                 self._check_for_game_over(piece.team)
@@ -237,11 +221,8 @@ class King(Piece):
     def possible_moves(self, **kwargs):
         enemies = kwargs['enemies']
         moves = {}
-        #if self.is_first_move:
-        #    moves[(2, self.y)] = [self.team]
-        #    moves[(6, self.y)] = [self.team]
         for coord, _type in {(self.x - 1, self.y - 1): ['Enemy', 'Empty'], (self.x, self.y - 1): ['Enemy', 'Empty'],
-                             (self.x - 1, self.y - 1): ['Enemy', 'Empty'], (self.x - 1, self.y): ['Enemy', 'Empty'],
+                             (self.x + 1, self.y - 1): ['Enemy', 'Empty'], (self.x - 1, self.y): ['Enemy', 'Empty'],
                              (self.x + 1, self.y): ['Enemy', 'Empty'], (self.x - 1, self.y + 1): ['Enemy', 'Empty'],
                              (self.x, self.y + 1): ['Enemy', 'Empty'], (self.x + 1, self.y + 1): ['Enemy', 'Empty'],
                              }.items():

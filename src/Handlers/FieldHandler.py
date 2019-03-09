@@ -13,6 +13,8 @@ class ChessBoard(Board):
         self.background_field = []
         self.black_or_white = 1
         self.chess_squares_to_lighten = []
+        self.selection_queue = []
+        self.current_player = 'black'
 
     def _color(self):
         if self.black_or_white == 0:
@@ -39,10 +41,9 @@ class ChessBoard(Board):
             self._color_swap()
             x_pos = 0
             y_pos += 100
-            self.field.append(row)
+            self.background_field.append(row)
 
     def _spawn_chess_pieces(self, team):
-        self._init_empty_field()
         for x, y in spawn_position_pawn(team):
             self.field[y][x] = Pawn(x*100, y*100, 100, 100, team, f'sprites/Chess_tile_p{team}.png')
         for x, y in spawn_position_rock(team):
@@ -68,8 +69,46 @@ class ChessBoard(Board):
     def _draw_chess_pieces(self, background):
         for row in self.field:
             for player in row:
-                if player:
+                if player.team != 'Empty':
                     player.draw(background)
+
+    def _light_available_moves(self, selection):
+        moves = self.allowed_moves(selection)
+        rects_to_light = []
+        if moves:
+            for x, y in moves.keys():
+                rects_to_light.append(pygame.Rect(x*100, y*100, 100, 100))
+        return rects_to_light
+
+    def _handle_selection(self, x, y):
+        selection = self.select(x, y)
+        if len(self.selection_queue) == 0:
+            if selection.team != self.current_player:
+                print(f'You are: {self.current_player} not {selection.team}')
+                return
+            if selection.team == 'Empty':
+                return
+        self.selection_queue.append(selection)
+        if len(self.selection_queue) == 1:
+            self.chess_squares_to_lighten = self._light_available_moves(selection)
+        if len(self.selection_queue) == 2:
+            self.move(self.selection_queue[0], self.selection_queue[1])
+            self.selection_queue[:] = []
+            self.chess_squares_to_lighten[:] = []
+            self._player_swap()
+
+    def _player_swap(self):
+        if self.current_player == 'black':
+            self.current_player = 'white'
+        else:
+            self.current_player = 'black'
+
+    def setup(self):
+        self._spawn_chess_background_field()
+        self._init_empty_field()
+        self._spawn_chess_pieces('black')
+        self._spawn_chess_pieces('white')
+        self._update_coords()
 
     def draw(self, background):
         self._draw_background(background)
@@ -80,76 +119,7 @@ class ChessBoard(Board):
             for row in self.background_field:
                 for chess_square in row:
                     coords = chess_square.select(event)
-                    print(f'Clicked Chess Square: {coords}')
                     if coords:
-                        pass
-
-
-class FieldHandler:
-
-    def _shiny(self, coords):
-        x, y = coords
-        x, y = int(x), int(y)
-        selection = self.board.select(x, y)
-        print(selection)
-        moves = self.board.allowed_moves(selection)
-        rects_to_light = []
-        if self.first_selection is not None and self.second_selection is None:
-                self.second_selection = selection
-        if moves:
-            if self.first_selection is None:
-                self.first_selection = selection
-            for x, y in moves.keys():
-                rects_to_light.append(pygame.Rect(x*100, y*100, 100, 100))
-        if self.second_selection and self.second_selection:
-            self.move()
-            return None
-        if rects_to_light:
-            return rects_to_light
-
-    def _select(self, x, y):
-        print(x, y)
-        selection = self.player_field[y][x]
-        print(f'Bauer: {selection}')
-        if selection:
-            return selection
-        return None
-
-    def _special_rochade_move(self, coord_f, coord_s):
-        if coord_s[1] == 0:
-            x_king = 2
-            x_rock = 3
-        elif coord_s[1] == 7:
-            x_king = 6
-            x_rock = 5
-        print(x_king, x_rock)
-        king = self._select(coord_f[0], coord_f[1])
-        king.x_pos = x_king*100
-        rock = self._select(coord_s[0], coord_s[1])
-        rock.x_pos = x_rock*100
-        self.player_field[coord_f[1]][coord_f[0]] = None
-        self.player_field[coord_s[1]][coord_s[0]] = None
-        self.player_field[coord_f[1]][x_king] = king
-        self.player_field[coord_s[1]][x_rock] = rock
-
-    def move(self):
-        x_f, y_f = self.first_selection.x, self.first_selection.y
-        x_s, y_s = self.second_selection.x, self.second_selection.y
-        moving = self.board.move(self.first_selection, self.second_selection)
-        if moving == 'Rochade':
-            self._special_rochade_move((x_s, y_s), (x_s, y_s))
-        else:
-            if type(moving) is bool:
-                print('Check first and second selection')
-                print(self.first_selection, self.second_selection)
-                player = self._select(x_f, y_f)
-                if player:
-                    self.player_field[y_f][x_f] = None
-                    player.x_pos = x_s * 100
-                    player.y_pos = y_s * 100
-                    self.player_field[y_s][x_s] = player
-        self.first_selection, self.second_selection = None, None
-
-    def update_player_field(self, index, value):
-        x, y = index
-        self.player_field[y][x] = value
+                        x, y = coords[0], coords[1]
+                        print(f'Clicked Chess Square: X: {x}, Y: {y}')
+                        self._handle_selection(x, y)
