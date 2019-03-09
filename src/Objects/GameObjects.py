@@ -18,24 +18,24 @@ class Board:
                 row.append(Empty(x, y))
             self.field.append(row)
 
-    def setup(self):
-        self._spawn('white')
-        self._spawn('black')
-        self._update_coords()
+    #def setup(self):
+    #    self._spawn('white')
+    #    self._spawn('black')
+    #    self._update_coords()
 
-    def _spawn(self, team):
-        for x, y in spawn_position_pawn(team):
-            self.field[y][x] = Pawn(x, y, team)
-        for x, y in spawn_position_rock(team):
-            self.field[y][x] = Rock(x, y, team)
-        for x, y in spawn_position_knight(team):
-            self.field[y][x] = Knight(x, y, team)
-        for x, y in spawn_position_bishop(team):
-            self.field[y][x] = Bishop(x, y, team)
-        x, y = spawn_position_king(team)
-        self.field[y][x] = King(x, y, team)
-        x, y = spawn_position_queen(team)
-        self.field[y][x] = Queen(x, y, team)
+    #def _spawn(self, team):
+    #    for x, y in spawn_position_pawn(team):
+    #        self.field[y][x] = Pawn(x, y, team)
+    #    for x, y in spawn_position_rock(team):
+    #        self.field[y][x] = Rock(x, y, team)
+    #    for x, y in spawn_position_knight(team):
+    #        self.field[y][x] = Knight(x, y, team)
+    #    for x, y in spawn_position_bishop(team):
+    #        self.field[y][x] = Bishop(x, y, team)
+    #    x, y = spawn_position_king(team)
+    #    self.field[y][x] = King(x, y, team)
+    #    x, y = spawn_position_queen(team)
+    #    self.field[y][x] = Queen(x, y, team)
 
     def _update_all_allowed_moves(self):
         for enemy in self.pieces_white:

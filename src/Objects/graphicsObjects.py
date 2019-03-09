@@ -1,5 +1,7 @@
 import pygame
 from src.helpers.SelectionQueue import SelectionQueue
+from src.Objects.GameObjects import Pawn as gPawn, Queen as gQueen, King as gKing, Bishop as gBishop, \
+    Knight as gKnight, Rock as gRock
 
 selection_queue = SelectionQueue()
 
@@ -49,46 +51,46 @@ class GameObject(pygame.sprite.Sprite):
         return int(self.x_pos / 100), int(self.y_pos / 100)
 
 
-class Pawn(GameObject):
+class Pawn(GameObject, gPawn):
 
-    def __init__(self, x, y, width, height, background, team, img_path):
-        super().__init__(x, y, width, height, team, img_path)
-        self.draw(background)
-
-
-class Queen(GameObject):
-
-    def __init__(self, x, y, width, height, background, team, img_path):
-        super().__init__(x, y, width, height, team, img_path)
-        self.draw(background)
+    def __init__(self, x, y, width, height, team, img_path):
+        GameObject.__init__(self, x, y, width, height, team, img_path)
+        gPawn.__init__(self, x, y, team)
 
 
-class King(GameObject):
+class Queen(GameObject, gQueen):
 
-    def __init__(self, x, y, width, height, background, team, img_path):
-        super().__init__(x, y, width, height, team, img_path)
-        self.draw(background)
-
-
-class Bishop(GameObject):
-
-    def __init__(self, x, y, width, height, background, team, img_path):
-        super().__init__(x, y, width, height, team, img_path)
-        self.draw(background)
+    def __init__(self, x, y, width, height, team, img_path):
+        GameObject.__init__(self, x, y, width, height, team, img_path)
+        gQueen.__init__(self, x, y, team)
 
 
-class Knight(GameObject):
+class King(GameObject, gKing):
 
-    def __init__(self, x, y, width, height, background, team, img_path):
-        super().__init__(x, y, width, height, team, img_path)
-        self.draw(background)
+    def __init__(self, x, y, width, height, team, img_path):
+        GameObject.__init__(self, x, y, width, height, team, img_path)
+        gKing.__init__(self, x, y, team)
 
 
-class Rock(GameObject):
+class Bishop(GameObject, gBishop):
 
-    def __init__(self, x, y, width, height, background, team, img_path):
-        super().__init__(x, y, width, height, team, img_path)
-        self.draw(background)
+    def __init__(self, x, y, width, height, team, img_path):
+        GameObject.__init__(self, x, y, width, height, team, img_path)
+        gBishop.__init__(self, x, y, team)
+
+
+class Knight(GameObject, gKnight):
+
+    def __init__(self, x, y, width, height, team, img_path):
+        GameObject.__init__(self, x, y, width, height, team, img_path)
+        gKnight.__init__(self, x, y, team)
+
+
+class Rock(GameObject, gRock):
+
+    def __init__(self, x, y, width, height, team, img_path):
+        GameObject.__init__(self, x, y, width, height, team, img_path)
+        gRock.__init__(self, x, y, team)
 
 
 class ChessSquare(pygame.sprite.Sprite):

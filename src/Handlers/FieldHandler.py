@@ -1,62 +1,91 @@
 from src.Objects.graphicsObjects import ChessSquare, Pawn, Queen, King, Rock, Bishop, Knight
 from src.Objects.GameObjects import Board
 from src.helpers.SpawnPositions import *
+from src.helpers.Colors import Black, White, Green
 import pygame
 
 
-class FieldHandler:
+class ChessBoard(Board):
 
-    def __init__(self):
-        self.black = (255, 255, 255)
-        self.white = (0, 0, 0)
-        self.width = 100
-        self.height = 100
-        self.black_or_white = 0
-        self.field = []
-        self.player_field = []
-        self.board = Board()
-        self.board.setup()
-        self.rects_to_lighten = []
-        self.first_selection = None
-        self.second_selection = None
+    def __init__(self, width_height=100):
+        super().__init__()
+        self.width_height = width_height
+        self.background_field = []
+        self.black_or_white = 1
+        self.chess_squares_to_lighten = []
 
-    def setup_draw(self, background):
+    def _color(self):
+        if self.black_or_white == 0:
+            self.black_or_white = 1
+            return Black
+        else:
+            self.black_or_white = 0
+            return White
+
+    def _color_swap(self):
+        if self.black_or_white == 0:
+            self.black_or_white = 1
+        else:
+            self.black_or_white = 0
+
+    def _spawn_chess_background_field(self):
         x_pos, y_pos = 0, 0
         for y in range(0, 8):
             row = []
             for x in range(0, 8):
-                color = self.color()
-                rect = ChessSquare(x_pos, y_pos, color, self.width, self.height, 0)
-                pygame.draw.rect(background, rect.color, rect.rect, rect.thickness)
+                rect = ChessSquare(x_pos, y_pos, self._color(), self.width_height, self.width_height, 0)
                 row.append(rect)
                 x_pos += 100
-            self.color_swap()
+            self._color_swap()
             x_pos = 0
             y_pos += 100
             self.field.append(row)
-        self._setup_player_field(background)
 
-    def draw(self, background):
-        for row in self.field:
+    def _spawn_chess_pieces(self, team):
+        self._init_empty_field()
+        for x, y in spawn_position_pawn(team):
+            self.field[y][x] = Pawn(x*100, y*100, 100, 100, team, f'sprites/Chess_tile_p{team}.png')
+        for x, y in spawn_position_rock(team):
+            self.field[y][x] = Rock(x*100, y*100, 100, 100, team, f'sprites/Chess_tile_r{team}.png')
+        for x, y in spawn_position_knight(team):
+            self.field[y][x] = Knight(x*100, y*100, 100, 100, team, f'sprites/Chess_tile_n{team}.png')
+        for x, y in spawn_position_bishop(team):
+            self.field[y][x] = Bishop(x*100, y*100, 100, 100, team, f'sprites/Chess_tile_b{team}.png')
+        x, y = spawn_position_king(team)
+        self.field[y][x] = King(x*100, y*100, 100, 100, team, f'sprites/Chess_tile_k{team}.png')
+        x, y = spawn_position_queen(team)
+        self.field[y][x] = Queen(x*100, y*100, 100, 100, team, f'sprites/Chess_tile_q{team}.png')
+        print(f'Spawned Chess Pieces {team}\n{self.field}')
+
+    def _draw_background(self, background):
+        for row in self.background_field:
             for rect in row:
                 pygame.draw.rect(background, rect.color, rect.rect, rect.thickness)
-        if self.rects_to_lighten:
-            for rect in self.rects_to_lighten:
-                pygame.draw.rect(background, (10, 200, 60), rect, 5)
+        if self.chess_squares_to_lighten:
+            for rect in self.chess_squares_to_lighten:
+                pygame.draw.rect(background, Green, rect, 5)
 
-    def draw_board(self, background):
-        for row in self.player_field:
+    def _draw_chess_pieces(self, background):
+        for row in self.field:
             for player in row:
                 if player:
                     player.draw(background)
 
-    def check_for_clicks(self, event):
+    def draw(self, background):
+        self._draw_background(background)
+        self._draw_chess_pieces(background)
+
+    def event_handler(self, event):
         if event.type == pygame.MOUSEBUTTONUP:
-            for row in self.field:
+            for row in self.background_field:
                 for chess_square in row:
                     coords = chess_square.select(event)
+                    print(f'Clicked Chess Square: {coords}')
                     if coords:
-                        self.rects_to_lighten = self._shiny(coords)
+                        pass
+
+
+class FieldHandler:
 
     def _shiny(self, coords):
         x, y = coords
@@ -120,45 +149,6 @@ class FieldHandler:
                     player.y_pos = y_s * 100
                     self.player_field[y_s][x_s] = player
         self.first_selection, self.second_selection = None, None
-
-    def _setup_player_field(self, background):
-        for y in range(0, 8):
-            row = []
-            for x in range(0, 8):
-                row.append(None)
-            self.player_field.append(row)
-        self._spawn_player(background, 'black')
-        self._spawn_player(background, 'white')
-
-    def _spawn_player(self, background, team):
-        for x, y in spawn_position_pawn(team):
-            self.player_field[y][x] = Pawn(x*100, y*100, 100, 100, background, team, f'sprites/Chess_tile_p{team}.png')
-        for x, y in spawn_position_rock(team):
-            self.player_field[y][x] = Rock(x*100, y*100, 100, 100, background, team, f'sprites/Chess_tile_r{team}.png')
-        for x, y in spawn_position_knight(team):
-            self.player_field[y][x] = Knight(x*100, y*100, 100, 100, background, team, f'sprites/Chess_tile_n{team}.png')
-        for x, y in spawn_position_bishop(team):
-            self.player_field[y][x] = Bishop(x*100, y*100, 100, 100, background, team, f'sprites/Chess_tile_b{team}.png')
-        x, y = spawn_position_king(team)
-        self.player_field[y][x] = King(x*100, y*100, 100, 100, background, team, f'sprites/Chess_tile_k{team}.png')
-        x, y = spawn_position_queen(team)
-        self.player_field[y][x] = Queen(x*100, y*100, 100, 100, background, team, f'sprites/Chess_tile_q{team}.png')
-        print('Player field:')
-        print(self.player_field)
-
-    def color(self):
-        if self.black_or_white == 0:
-            self.black_or_white = 1
-            return self.black
-        else:
-            self.black_or_white = 0
-            return self.white
-
-    def color_swap(self):
-        if self.black_or_white == 0:
-            self.black_or_white = 1
-        else:
-            self.black_or_white = 0
 
     def update_player_field(self, index, value):
         x, y = index
