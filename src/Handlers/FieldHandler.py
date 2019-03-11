@@ -64,7 +64,7 @@ class ChessBoard(Board):
                 pygame.draw.rect(background, rect.color, rect.rect, rect.thickness)
         if self.chess_squares_to_lighten:
             for rect in self.chess_squares_to_lighten:
-                pygame.draw.rect(background, Green, rect, 5)
+                pygame.draw.rect(background, Green, rect, 2)
 
     def _draw_chess_pieces(self, background):
         for row in self.field:
@@ -81,7 +81,19 @@ class ChessBoard(Board):
         return rects_to_light
 
     def _handle_selection(self, x, y):
+        rects_to_light = []
         selection = self.select(x, y)
+
+        """Testing"""
+        if selection.team == 'black':
+            lighten = self.all_allowed_moves_black
+        else:
+            lighten = self.all_allowed_moves_white
+        for piece, moves in lighten.items():
+            for x, y in moves:
+                rects_to_light.append(pygame.Rect(x * 100, y * 100, 100, 100))
+        """Testing"""
+
         if len(self.selection_queue) == 0:
             if selection.team != self.current_player:
                 print(f'You are: {self.current_player} not {selection.team}')
@@ -90,12 +102,12 @@ class ChessBoard(Board):
                 return
         self.selection_queue.append(selection)
         if len(self.selection_queue) == 1:
-            self.chess_squares_to_lighten = self._light_available_moves(selection)
+            self.chess_squares_to_lighten = rects_to_light#self._light_available_moves(selection)
         if len(self.selection_queue) == 2:
-            self.move(self.selection_queue[0], self.selection_queue[1])
+            if self.move(self.selection_queue[0], self.selection_queue[1]) is True:
+                self._player_swap()
             self.selection_queue[:] = []
             self.chess_squares_to_lighten[:] = []
-            self._player_swap()
 
     def _player_swap(self):
         if self.current_player == 'black':
@@ -108,7 +120,7 @@ class ChessBoard(Board):
         self._init_empty_field()
         self._spawn_chess_pieces('black')
         self._spawn_chess_pieces('white')
-        self._update_coords()
+        self.update()
 
     def draw(self, background):
         self._draw_background(background)

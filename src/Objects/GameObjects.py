@@ -1,5 +1,6 @@
 from src.helpers.SpawnPositions import *
 
+
 class Board:
 
     def __init__(self):
@@ -7,7 +8,7 @@ class Board:
         self._init_empty_field()
         self.coord_white, self.coord_black = [], []
         self.pieces_white, self.pieces_black = [], []
-        self.all_allowed_moves_white, self.all_allowed_moves_black = [], []
+        self.all_allowed_moves_white, self.all_allowed_moves_black = {}, {}
 
     def _init_empty_field(self):
         self.field = []
@@ -18,14 +19,14 @@ class Board:
             self.field.append(row)
 
     def _update_all_allowed_moves(self):
+        self.all_allowed_moves_white.clear()
+        self.all_allowed_moves_black.clear()
         for enemy in self.pieces_white:
-            positions = enemy.possible_moves(black=self.coord_black, white=self.coord_white,
-                                             enemies=self.all_allowed_moves_black)
-            self.all_allowed_moves_white += positions.keys()
+            positions = self.allowed_moves(enemy)
+            self.all_allowed_moves_white[enemy] = positions.keys()
         for enemy in self.pieces_black:
-            positions = enemy.possible_moves(black=self.coord_black, white=self.coord_white,
-                                             enemies=self.all_allowed_moves_white)
-            self.all_allowed_moves_black += positions.keys()
+            positions = self.allowed_moves(enemy)
+            self.all_allowed_moves_black[enemy] = positions.keys()
 
     def _update_coords(self):
         self.coord_black, self.coord_white = [], []
@@ -96,23 +97,21 @@ class Board:
             x_king = 6
             x_rock = 5
             coords = [(5, piece.y), (6, piece.y)]
-            for x, y in coords:
-                print(self.select(x, y).team)
-                if self.select(x, y).team != 'Empty':
-                    print('Meeeep')
-                    return None
-            if piece.check_coord((piece.y, x_king), enemies)is None:
-                self._move(piece, x_king, piece.y)
-                self._move(to_piece, x_rock, to_piece.y)
-                self._move(Empty(piece.x, piece.y), piece.x, piece.y)
-                self._move(Empty(to_piece.x, to_piece.y), to_piece.x, to_piece.y)
-                piece.x, to_piece.x = x_king, x_rock
-                #for graphic
-                piece.x_pos, to_piece.x_pos = int(x_king * 100), int(x_rock * 100)
-                piece.is_first_move = False
-                to_piece.is_first_move = False
-                return True
-        return None
+        for x, y in coords:
+            if self.select(x, y).team != 'Empty':
+                return None
+        #print('Hallo wo bist du ? ', piece.check_coord((piece.y, x_king), enemies))
+        #if piece.check_coord((piece.y, x_king), enemies) is None:
+        self._move(piece, x_king, piece.y)
+        self._move(to_piece, x_rock, to_piece.y)
+        self._move(Empty(piece.x, piece.y), piece.x, piece.y)
+        self._move(Empty(to_piece.x, to_piece.y), to_piece.x, to_piece.y)
+        piece.x, to_piece.x = x_king, x_rock
+        #for graphic
+        piece.x_pos, to_piece.x_pos = int(x_king * 100), int(x_rock * 100)
+        piece.is_first_move = False
+        to_piece.is_first_move = False
+        return True
 
     def move(self, piece, to_piece):
         if piece.team == 'Empty':
@@ -125,12 +124,13 @@ class Board:
             else:
                 all_enemies = self.all_allowed_moves_white
             possible_moves = piece.possible_moves(white=self.coord_white, black=self.coord_black, enemies=all_enemies)
-            print(to_piece.team, piece.team, type(to_piece), Rock, to_piece.is_first_move)
+            print(to_piece.team, piece.team, str(to_piece), 'Rock', to_piece.is_first_move)
             if to_piece.team == piece.team and str(to_piece) == 'Rock' and to_piece.is_first_move:
+                print(all_enemies)
                 if self._rochhade(piece, to_piece, all_enemies):
                     self._check_for_game_over(piece.team)
                     print('Played Rochade')
-                    return 'Rochade'
+                    return True
         else:
             possible_moves = piece.possible_moves(white=self.coord_white, black=self.coord_black)
         x_to, y_to = to_piece.x, to_piece.y
@@ -160,13 +160,14 @@ class Board:
 
 class Piece:
 
-    def __init__(self, x, y, team, name):
+    def __init__(self, x, y, team, name, value):
         self.x = x
         self.y = y
         self.team = team
         self.is_first_move = True
         self.name = team + name
         self.enemy = self._get_enemy()
+        self.value = value
 
     def _get_enemy(self):
         if self.team == 'black':
@@ -178,8 +179,8 @@ class Piece:
 
 class Empty(Piece):
 
-    def __init__(self, x, y, team='Empty'):
-        Piece.__init__(self, x, y, team, '-empty')
+    def __init__(self, x, y, team='Empty', value=0):
+        Piece.__init__(self, x, y, team, '-empty', value)
 
     def __repr__(self):
         return f"Empty at X: {self.x} Y: {self.y}"
@@ -187,8 +188,8 @@ class Empty(Piece):
 
 class Pawn(Piece):
 
-    def __init__(self, x, y, team):
-        Piece.__init__(self, x, y, team, 'pawn')
+    def __init__(self, x, y, team, value=1):
+        Piece.__init__(self, x, y, team, 'pawn', value)
 
     def __repr__(self):
         return f"{self.team} Pawn on X: {self.x} Y: {self.y}"
@@ -198,28 +199,34 @@ class Pawn(Piece):
         if self.team == 'white':
             y = '+1'
             y2 = '+2'
+            ally = kwargs['white']
+            enemy = kwargs['black']
         else:
             y = '-1'
             y2 = '-2'
-        if self.is_first_move:
+            ally = kwargs['black']
+            enemy = kwargs['white']
+        x = self.x
+        if self.is_first_move and (self.x, self.y + int(y)) not in enemy and (self.x, self.y + int(y)) not in ally:
             moves[self.x, self.y + int(y2)] = ['Empty']
-        for coord, type in {(self.x, self.y + int(y)): ['Empty'], (self.x + 1, self.y + int(y)): [self.enemy],
+        for coord, _type in {(self.x, self.y + int(y)): ['Empty'], (self.x + 1, self.y + int(y)): [self.enemy],
                             (self.x - 1, self.y + int(y)): [self.enemy]}.items():
             if 0 <= coord[0] <= 7 and 0 <= coord[1] <= 7:
-                moves[coord] = type
+                moves[coord] = _type
         return moves
 
 
 class King(Piece):
 
-    def __init__(self, x, y, team):
-        Piece.__init__(self, x, y, team, '-king')
+    def __init__(self, x, y, team, value=0):
+        Piece.__init__(self, x, y, team, '-king', value)
 
     def __repr__(self):
         return f"{self.team} King at X: {self.x} Y: {self.y}"
 
     def possible_moves(self, **kwargs):
         enemies = kwargs['enemies']
+        print(f'Test: {enemies}')
         moves = {}
         for coord, _type in {(self.x - 1, self.y - 1): ['Enemy', 'Empty'], (self.x, self.y - 1): ['Enemy', 'Empty'],
                              (self.x + 1, self.y - 1): ['Enemy', 'Empty'], (self.x - 1, self.y): ['Enemy', 'Empty'],
@@ -228,27 +235,39 @@ class King(Piece):
                              }.items():
             if 0 <= coord[0] <= 7 and 0 <= coord[1] <= 7:
                 moves[coord] = _type
-        return self.matt(enemies, moves)
+        return self._matt(enemies, moves)
 
-    def matt(self, all_allowed_enemie_moves, moves):
-        for coord in moves.items():
+    def _matt(self, all_allowed_enemie_moves, moves):
+        copy_moves = moves.copy()
+        for coord, _type in copy_moves.items():
+            if _type.name == 'Pawn':
+                pass
             if self.check_coord(coord, all_allowed_enemie_moves):
                 del moves[coord]
         if moves:
             return moves
         return None
 
+    def matt(self, all_allowed_enemies_moves):
+        for _type, moves in all_allowed_enemies_moves.items():
+            if (self.x, self.y) in moves:
+                return _type, moves
+        return None
+
+
     @staticmethod
     def check_coord(coord, enemies):
-        if coord in enemies:
-            return True
+        print(coord)
+        for _ , moves in enemies.items():
+            if coord in moves:
+                return True
         return None
 
 
 class Queen(Piece):
 
-    def __init__(self, x, y, team):
-        Piece.__init__(self, x, y, team, '-queen')
+    def __init__(self, x, y, team, value=9):
+        Piece.__init__(self, x, y, team, '-queen', value)
 
     def __repr__(self):
         return f"{self.team} Queen at X: {self.x} Y: {self.y}"
@@ -336,8 +355,8 @@ class Queen(Piece):
 
 class Rock(Piece):
 
-    def __init__(self, x, y, team):
-        Piece.__init__(self, x, y, team, '-rock')
+    def __init__(self, x, y, team, value=5):
+        Piece.__init__(self, x, y, team, '-rock', value)
 
     def __repr__(self):
         return f"{self.team} Rock at X: {self.x} Y: {self.y}"
@@ -385,8 +404,8 @@ class Rock(Piece):
 
 class Knight(Piece):
 
-    def __init__(self, x, y, team):
-        Piece.__init__(self, x, y, team, '-knight')
+    def __init__(self, x, y, team, value=3):
+        Piece.__init__(self, x, y, team, '-knight', value)
 
     def __repr__(self):
         return f"{self.team} Knight at X: {self.x} Y: {self.y}"
@@ -405,8 +424,8 @@ class Knight(Piece):
 
 class Bishop(Piece):
 
-    def __init__(self, x, y, team):
-        Piece.__init__(self, x, y, team, '-bishop')
+    def __init__(self, x, y, team, value=3):
+        Piece.__init__(self, x, y, team, '-bishop', value)
 
     def __repr__(self):
         return f"{self.team} Bishop at X: {self.x} Y: {self.y}"
