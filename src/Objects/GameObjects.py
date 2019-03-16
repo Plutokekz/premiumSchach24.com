@@ -33,26 +33,27 @@ class Board:
         self.pieces_white, self.pieces_black = [], []
         for row in self.field:
             for piece in row:
-                if piece:
+                if piece.team != 'Empty':
                     if piece.team == 'black':
+                        print(piece, (piece.x, piece.y))
                         self.coord_black.append((piece.x, piece.y))
                         self.pieces_black.append(piece)
-                    elif piece.team == 'white':
+                    else:
                         self.coord_white.append((piece.x, piece.y))
                         self.pieces_white.append(piece)
 
-    def _check_for_game_over(self, current_team):
-        if current_team == 'black':
-            enemies = self.pieces_white
-            moves = self.all_allowed_moves_black
-        else:
-            enemies = self.pieces_white
-            moves = self.all_allowed_moves_white
-        for enemy in enemies:
-            if type(enemy) == King:
-                if enemy.possible_moves(enemies=moves) is None:
-                    print(f'Winner {current_team}')
-                    exit()
+    #def _check_for_game_over(self, current_team):
+    #    if current_team == 'black':
+    #        enemies = self.pieces_white
+    #        moves = self.all_allowed_moves_black
+    #    else:
+    #        enemies = self.pieces_white
+    #        moves = self.all_allowed_moves_white
+    #    for enemy in enemies:
+    #        if type(enemy) == King:
+    #            if enemy.possible_moves(enemies=moves) is None:
+    #                print(f'Winner {current_team}')
+    #                exit()
 
     def update(self):
         self._update_coords()
@@ -75,11 +76,16 @@ class Board:
         if piece.team == 'Empty':
             print('Empty field can not move')
             return
-        if piece.team == 'white':
-            all_enemies = self.all_allowed_moves_black
-        else:
-            all_enemies = self.all_allowed_moves_white
-        possible_moves = piece.possible_moves(white=self.coord_white, black=self.coord_black, enemies=all_enemies)
+        possible_moves = piece.possible_moves(white=self.coord_white, black=self.coord_black)
+        if str(piece) == 'King':
+            if piece.team == 'white':
+                enemies = self.pieces_black
+            else:
+                enemies = self.pieces_white
+            return self._allowed_moves(self.allowed_moves_king(piece, possible_moves, enemies))
+        return self._allowed_moves(possible_moves)
+
+    def _allowed_moves(self, possible_moves):
         real_possible_moves = possible_moves.copy()
         for x, y in possible_moves.keys():
             if self.field[y][x].team in possible_moves[(x, y)]:
@@ -87,6 +93,34 @@ class Board:
             else:
                 del real_possible_moves[(x, y)]
         return real_possible_moves
+
+    def allowed_moves_king(self, king, own_moves, enemies):
+        white_coord = self.coord_white.copy()
+        black_coord = self.coord_black.copy()
+        if king.team == 'black':
+            black_coord.remove((king.x, king.y))
+            for coord, _ in king.possible_moves(white=self.coord_white, black=self.coord_black).items():
+                if coord in white_coord:
+                    print('removed', coord)
+                    white_coord.remove(coord)
+        elif king.team == 'white':
+            white_coord.remove((king.x, king.y))
+            for coord, _ in king.possible_moves(white=self.coord_white, black=self.coord_black).items():
+                if coord in black_coord:
+                    print('removed', coord)
+                    black_coord.remove(coord)
+        for enemy in enemies:
+            enemy_moves = self._allowed_moves(enemy.possible_moves(white=white_coord, black=black_coord))
+            if str(enemy) == 'Pawn':
+                # TODO: special case
+                pass
+            for coord in enemy_moves.keys():
+                if coord in own_moves.keys():
+                    print('cant  move to here because of Matt')
+                    print(coord)
+                    del own_moves[coord]
+        print('I hope it was removed', own_moves)
+        return own_moves
 
     def _rochhade(self, piece, to_piece, enemies):
         if to_piece.x == 0:
@@ -123,16 +157,14 @@ class Board:
                 all_enemies = self.all_allowed_moves_black
             else:
                 all_enemies = self.all_allowed_moves_white
-            possible_moves = piece.possible_moves(white=self.coord_white, black=self.coord_black, enemies=all_enemies)
-            print(to_piece.team, piece.team, str(to_piece), 'Rock', to_piece.is_first_move)
+            possible_moves = self.allowed_moves(piece) #piece.possible_moves(white=self.coord_white, black=self.coord_black, enemies=all_enemies)
+            #print(to_piece.team, piece.team, str(to_piece), 'Rock', to_piece.is_first_move)
             if to_piece.team == piece.team and str(to_piece) == 'Rock' and to_piece.is_first_move:
-                print(all_enemies)
                 if self._rochhade(piece, to_piece, all_enemies):
-                    self._check_for_game_over(piece.team)
                     print('Played Rochade')
                     return True
         else:
-            possible_moves = piece.possible_moves(white=self.coord_white, black=self.coord_black)
+            possible_moves = self.allowed_moves(piece) #piece.possible_moves(white=self.coord_white, black=self.coord_black)
         x_to, y_to = to_piece.x, to_piece.y
         print(f'From: {piece}, To: {to_piece}, Possible moves From: {possible_moves}')
         if (x_to, y_to) in possible_moves.keys():
@@ -144,7 +176,6 @@ class Board:
                 piece.x_pos, piece.y_pos = int(x_to*100), int(y_to*100)
                 piece.is_first_move = False
                 self.update()
-                self._check_for_game_over(piece.team)
                 return True
             else:
                 print(f'It must be {possible_moves[(x_to, y_to)]} and not {to_piece.team} ')
@@ -225,43 +256,16 @@ class King(Piece):
         return f"{self.team} King at X: {self.x} Y: {self.y}"
 
     def possible_moves(self, **kwargs):
-        enemies = kwargs['enemies']
-        print(f'Test: {enemies}')
+        e = self.enemy
         moves = {}
-        for coord, _type in {(self.x - 1, self.y - 1): ['Enemy', 'Empty'], (self.x, self.y - 1): ['Enemy', 'Empty'],
-                             (self.x + 1, self.y - 1): ['Enemy', 'Empty'], (self.x - 1, self.y): ['Enemy', 'Empty'],
-                             (self.x + 1, self.y): ['Enemy', 'Empty'], (self.x - 1, self.y + 1): ['Enemy', 'Empty'],
-                             (self.x, self.y + 1): ['Enemy', 'Empty'], (self.x + 1, self.y + 1): ['Enemy', 'Empty'],
+        for coord, _type in {(self.x - 1, self.y - 1): [e, 'Empty'], (self.x, self.y - 1): [e, 'Empty'],
+                             (self.x + 1, self.y - 1): [e, 'Empty'], (self.x - 1, self.y): [e, 'Empty'],
+                             (self.x + 1, self.y): [e, 'Empty'], (self.x - 1, self.y + 1): [e, 'Empty'],
+                             (self.x, self.y + 1): [e, 'Empty'], (self.x + 1, self.y + 1): [e, 'Empty'],
                              }.items():
             if 0 <= coord[0] <= 7 and 0 <= coord[1] <= 7:
                 moves[coord] = _type
-        return self._matt(enemies, moves)
-
-    def _matt(self, all_allowed_enemie_moves, moves):
-        copy_moves = moves.copy()
-        for coord, _type in copy_moves.items():
-            if _type.name == 'Pawn':
-                pass
-            if self.check_coord(coord, all_allowed_enemie_moves):
-                del moves[coord]
-        if moves:
-            return moves
-        return None
-
-    def matt(self, all_allowed_enemies_moves):
-        for _type, moves in all_allowed_enemies_moves.items():
-            if (self.x, self.y) in moves:
-                return _type, moves
-        return None
-
-
-    @staticmethod
-    def check_coord(coord, enemies):
-        print(coord)
-        for _ , moves in enemies.items():
-            if coord in moves:
-                return True
-        return None
+        return moves
 
 
 class Queen(Piece):

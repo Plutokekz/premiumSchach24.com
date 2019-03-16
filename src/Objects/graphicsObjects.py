@@ -1,5 +1,4 @@
 import pygame
-from src.helpers.SelectionQueue import SelectionQueue
 from src.Objects.GameObjects import Pawn as gPawn, Queen as gQueen, King as gKing, Bishop as gBishop, \
     Knight as gKnight, Rock as gRock
 
@@ -39,6 +38,9 @@ class Pawn(GameObject, gPawn):
     def __init__(self, x, y, width, height, team, img_path):
         GameObject.__init__(self, x, y, width, height, team, img_path)
         gPawn.__init__(self, int(x/100), int(y/100), team)
+
+    def __str__(self):
+        return 'Pawn'
 
 
 class Queen(GameObject, gQueen):

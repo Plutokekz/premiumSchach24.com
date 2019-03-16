@@ -56,7 +56,7 @@ class ChessBoard(Board):
         self.field[y][x] = King(x*100, y*100, 100, 100, team, f'sprites/Chess_tile_k{team}.png')
         x, y = spawn_position_queen(team)
         self.field[y][x] = Queen(x*100, y*100, 100, 100, team, f'sprites/Chess_tile_q{team}.png')
-        print(f'Spawned Chess Pieces {team}\n{self.field}')
+        #print(f'Spawned Chess Pieces {team}\n{self.field}')
 
     def _draw_background(self, background):
         for row in self.background_field:
@@ -102,7 +102,7 @@ class ChessBoard(Board):
                 return
         self.selection_queue.append(selection)
         if len(self.selection_queue) == 1:
-            self.chess_squares_to_lighten = rects_to_light#self._light_available_moves(selection)
+            self.chess_squares_to_lighten = self._light_available_moves(selection)
         if len(self.selection_queue) == 2:
             if self.move(self.selection_queue[0], self.selection_queue[1]) is True:
                 self._player_swap()
@@ -133,5 +133,5 @@ class ChessBoard(Board):
                     coords = chess_square.select(event)
                     if coords:
                         x, y = coords[0], coords[1]
-                        print(f'Clicked Chess Square: X: {x}, Y: {y}')
+                        #print(f'Clicked Chess Square: X: {x}, Y: {y}')
                         self._handle_selection(x, y)
