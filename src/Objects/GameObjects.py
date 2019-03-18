@@ -98,29 +98,31 @@ class Board:
         white_coord = self.coord_white.copy()
         black_coord = self.coord_black.copy()
         if king.team == 'black':
+            y = '+1'
+            y2 = '+2'
             black_coord.remove((king.x, king.y))
             for coord, _ in king.possible_moves(white=self.coord_white, black=self.coord_black).items():
                 if coord in white_coord:
-                    print('removed', coord)
                     white_coord.remove(coord)
         elif king.team == 'white':
+            y = '-1'
+            y2 = '-2'
             white_coord.remove((king.x, king.y))
             for coord, _ in king.possible_moves(white=self.coord_white, black=self.coord_black).items():
                 if coord in black_coord:
-                    print('removed', coord)
                     black_coord.remove(coord)
         for enemy in enemies:
-            enemy_moves = self._allowed_moves(enemy.possible_moves(white=white_coord, black=black_coord))
+            enemy_moves = enemy.possible_moves(white=white_coord, black=black_coord)
             if str(enemy) == 'Pawn':
-                # TODO: special case
+                if (enemy.x, enemy.y + int(y2)) in enemy_moves.keys():
+                    del enemy_moves[enemy.x, enemy.y + int(y2)]
+                if (enemy.x, enemy.y + int(y)) in enemy_moves.keys():
+                    del enemy_moves[enemy.x, enemy.y + int(y)]
                 pass
             for coord in enemy_moves.keys():
                 if coord in own_moves.keys():
-                    print('cant  move to here because of Matt')
-                    print(coord)
                     del own_moves[coord]
-        print('I hope it was removed', own_moves)
-        return own_moves
+        return self._allowed_moves(own_moves)
 
     def _rochhade(self, piece, to_piece, enemies):
         if to_piece.x == 0:
@@ -134,7 +136,6 @@ class Board:
         for x, y in coords:
             if self.select(x, y).team != 'Empty':
                 return None
-        #print('Hallo wo bist du ? ', piece.check_coord((piece.y, x_king), enemies))
         #if piece.check_coord((piece.y, x_king), enemies) is None:
         self._move(piece, x_king, piece.y)
         self._move(to_piece, x_rock, to_piece.y)
@@ -157,14 +158,13 @@ class Board:
                 all_enemies = self.all_allowed_moves_black
             else:
                 all_enemies = self.all_allowed_moves_white
-            possible_moves = self.allowed_moves(piece) #piece.possible_moves(white=self.coord_white, black=self.coord_black, enemies=all_enemies)
-            #print(to_piece.team, piece.team, str(to_piece), 'Rock', to_piece.is_first_move)
+            possible_moves = self.allowed_moves(piece)
             if to_piece.team == piece.team and str(to_piece) == 'Rock' and to_piece.is_first_move:
                 if self._rochhade(piece, to_piece, all_enemies):
                     print('Played Rochade')
                     return True
         else:
-            possible_moves = self.allowed_moves(piece) #piece.possible_moves(white=self.coord_white, black=self.coord_black)
+            possible_moves = self.allowed_moves(piece)
         x_to, y_to = to_piece.x, to_piece.y
         print(f'From: {piece}, To: {to_piece}, Possible moves From: {possible_moves}')
         if (x_to, y_to) in possible_moves.keys():
@@ -241,7 +241,7 @@ class Pawn(Piece):
         if self.is_first_move and (self.x, self.y + int(y)) not in enemy and (self.x, self.y + int(y)) not in ally:
             moves[self.x, self.y + int(y2)] = ['Empty']
         for coord, _type in {(self.x, self.y + int(y)): ['Empty'], (self.x + 1, self.y + int(y)): [self.enemy],
-                            (self.x - 1, self.y + int(y)): [self.enemy]}.items():
+                             (self.x - 1, self.y + int(y)): [self.enemy]}.items():
             if 0 <= coord[0] <= 7 and 0 <= coord[1] <= 7:
                 moves[coord] = _type
         return moves
