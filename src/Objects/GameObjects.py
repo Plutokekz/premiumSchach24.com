@@ -35,7 +35,6 @@ class Board:
             for piece in row:
                 if piece.team != 'Empty':
                     if piece.team == 'black':
-                        print(piece, (piece.x, piece.y))
                         self.coord_black.append((piece.x, piece.y))
                         self.pieces_black.append(piece)
                     else:
@@ -136,7 +135,7 @@ class Board:
         for x, y in coords:
             if self.select(x, y).team != 'Empty':
                 return None
-        #if piece.check_coord((piece.y, x_king), enemies) is None:
+        # TODO if piece.check_coord((piece.y, x_king), enemies) is None:
         self._move(piece, x_king, piece.y)
         self._move(to_piece, x_rock, to_piece.y)
         self._move(Empty(piece.x, piece.y), piece.x, piece.y)
@@ -153,7 +152,6 @@ class Board:
             print('can not move Empty')
             return None
         if str(piece) == 'King':
-            print('King KING KING KING')
             if piece.team == 'white':
                 all_enemies = self.all_allowed_moves_black
             else:
